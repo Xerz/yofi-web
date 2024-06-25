@@ -52,25 +52,37 @@ def start_yoficator():
                     key = re.sub(r'ё', 'е', full_word)
                     dict_if[key] = full_word
 
+def replace_and_highlight_true_words(content):
+    global dict_true
+    pattern = re.compile(r'\b\w+\b')
+    matches = pattern.finditer(content)
+    offset = 0
+    for match in matches:
+        word = match.group().lower()
+        if word in dict_true:
+            replacement = dict_true[word]
+            highlighted = f'<span class="highlight-green">{replacement}</span>'
+            start, end = match.start() + offset, match.end() + offset
+            content = content[:start] + highlighted + content[end:]
+            offset += len(highlighted) - (end - start)
+    return content
+
 def find_next_word(content, start_index):
     global dict_true, dict_if
     pattern = re.compile(r'\b\w+\b')
     matches = pattern.finditer(content, start_index)
     for match in matches:
         word = match.group().lower()
-        if word in dict_true or word in dict_if:
+        if word in dict_if:
             return match.start(), match.end()
+    print('No more words found')
     return len(content), len(content)
 
 def set_yo(content, start, end):
-    global dict_true, dict_if
+    global dict_if
     word = content[start:end].lower()
     if word in dict_if:
         replacement = dict_if[word]
-        content = content[:start] + replacement + content[end:]
-        return content, start + len(replacement)
-    elif word in dict_true:
-        replacement = dict_true[word]
         content = content[:start] + replacement + content[end:]
         return content, start + len(replacement)
     return content, start

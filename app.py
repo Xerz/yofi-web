@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, ses
 import os
 import uuid
 import re
-from yo_ficator import start_yoficator, find_next_word, set_yo, highlight_word
+from yo_ficator import start_yoficator, find_next_word, set_yo, highlight_word, replace_and_highlight_true_words
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -37,8 +37,10 @@ def upload_file():
             file.save(filepath)
             temp_id = str(uuid.uuid4())
             temp_filepath = os.path.join(app.config['TEMP_FOLDER'], temp_id)
+            content = open(filepath, 'r', encoding='utf-8').read()
+            content = replace_and_highlight_true_words(content)
             with open(temp_filepath, 'w', encoding='utf-8') as temp_file:
-                temp_file.write(open(filepath, 'r', encoding='utf-8').read())
+                temp_file.write(content)
             start_yoficator()
             session['temp_id'] = temp_id
             session['filename'] = filename
@@ -62,6 +64,7 @@ def edit_file(temp_id):
         if action == 'save':
             content = request.form['content']
             content = re.sub(r'<span class="highlight">(.*?)</span>', r'\1', content)
+            content = re.sub(r'<span class="highlight-green">(.*?)</span>', r'\1', content)
             with open(os.path.join(app.config['UPLOAD_FOLDER'], session['filename']), 'w', encoding='utf-8') as file:
                 file.write(content)
             flash('File saved successfully!')

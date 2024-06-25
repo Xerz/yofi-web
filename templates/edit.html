@@ -44,6 +44,8 @@
         <button type="submit" name="action" value="set_yo">Тут 'Ё'</button>
         <button type="submit" name="action" value="save">Сохранить</button>
     </form>
+    <br>
+    <a href="{{ url_for('download_file', filename=filename) }}" class="button">Скачать файл</a>
     {% if message %}
         <p>{{ message }}</p>
     {% endif %}

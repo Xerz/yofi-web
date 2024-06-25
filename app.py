@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
 import os
 import uuid
 import re
@@ -76,7 +76,7 @@ def edit_file(temp_id):
             with open(os.path.join(app.config['UPLOAD_FOLDER'], session['filename']), 'w', encoding='utf-8') as file:
                 file.write(content)
             flash('File saved successfully!')
-            return redirect(url_for('index'))
+            return redirect(url_for('edit_file', temp_id=temp_id))
         elif action == 'next_word':
             if session.get('no_more_words', False):
                 session['index'] = 0
@@ -102,6 +102,11 @@ def edit_file(temp_id):
             highlighted_content = highlight_word(content, session['index'], session['end_index'])
 
     return render_template('edit.html', content=content, highlighted_content=highlighted_content, filename=session['filename'], index=session['index'], message=message, replace_count=session.get('replace_count', 0))
+
+@app.route('/download/<filename>')
+def download_file(filename):
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    return send_file(filepath, as_attachment=True)
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)

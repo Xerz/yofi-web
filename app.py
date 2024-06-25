@@ -17,6 +17,17 @@ if not os.path.exists(UPLOAD_FOLDER):
 if not os.path.exists(TEMP_FOLDER):
     os.makedirs(TEMP_FOLDER)
 
+def save_content_to_temp_file(content, temp_id):
+    temp_filepath = os.path.join(app.config['TEMP_FOLDER'], temp_id)
+    with open(temp_filepath, 'w', encoding='utf-8') as temp_file:
+        temp_file.write(content)
+    return temp_filepath
+
+def load_content_from_temp_file(temp_id):
+    temp_filepath = os.path.join(app.config['TEMP_FOLDER'], temp_id)
+    with open(temp_filepath, 'r', encoding='utf-8') as temp_file:
+        return temp_file.read()
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -36,28 +47,25 @@ def upload_file():
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
             temp_id = str(uuid.uuid4())
-            temp_filepath = os.path.join(app.config['TEMP_FOLDER'], temp_id)
             content = open(filepath, 'r', encoding='utf-8').read()
-            content = replace_and_highlight_true_words(content)
-            with open(temp_filepath, 'w', encoding='utf-8') as temp_file:
-                temp_file.write(content)
             start_yoficator()
+            content, replace_count = replace_and_highlight_true_words(content)
+            temp_filepath = save_content_to_temp_file(content, temp_id)
             session['temp_id'] = temp_id
             session['filename'] = filename
+            session['replace_count'] = replace_count
             session['index'] = 0
             session['end_index'] = 0
             session['first'] = True
+            session['no_more_words'] = False
             return redirect(url_for('edit_file', temp_id=temp_id))
     return render_template('upload.html')
 
 @app.route('/edit/<temp_id>', methods=['GET', 'POST'])
 def edit_file(temp_id):
-    temp_filepath = os.path.join(app.config['TEMP_FOLDER'], temp_id)
-    if not os.path.exists(temp_filepath):
-        return redirect(url_for('upload_file'))
-
-    content = open(temp_filepath, 'r', encoding='utf-8').read()
+    content = load_content_from_temp_file(temp_id)
     highlighted_content = highlight_word(content, session['index'], session['end_index'])
+    message = ""
 
     if request.method == 'POST':
         action = request.form['action']
@@ -70,22 +78,30 @@ def edit_file(temp_id):
             flash('File saved successfully!')
             return redirect(url_for('index'))
         elif action == 'next_word':
+            if session.get('no_more_words', False):
+                session['index'] = 0
+                session['end_index'] = 0
+                session['no_more_words'] = False
+                message = "Starting from the beginning."
             start, end = find_next_word(content, session['end_index'])
-            session['index'] = start
-            session['end_index'] = end
-            highlighted_content = highlight_word(content, start, end)
-            with open(temp_filepath, 'w', encoding='utf-8') as temp_file:
-                temp_file.write(content)
+            if start == len(content) and end == len(content):
+                message = "Больше сомнительных слов нет. Нажмите ещё раз, чтобы начать поиск сначала."
+                session['no_more_words'] = True
+            else:
+                session['index'] = start
+                session['end_index'] = end
+                session['no_more_words'] = False
+            highlighted_content = highlight_word(content, session['index'], session['end_index'])
+            save_content_to_temp_file(content, temp_id)
         elif action == 'set_yo':
             content, new_end_index = set_yo(content, session['index'], session['end_index'])
             session['end_index'] = new_end_index
             highlighted_content = highlight_word(content, session['index'], new_end_index)
-            with open(temp_filepath, 'w', encoding='utf-8') as temp_file:
-                temp_file.write(content)
+            save_content_to_temp_file(content, temp_id)
         else:
             highlighted_content = highlight_word(content, session['index'], session['end_index'])
 
-    return render_template('edit.html', content=content, highlighted_content=highlighted_content, filename=session['filename'], index=session['index'])
+    return render_template('edit.html', content=content, highlighted_content=highlighted_content, filename=session['filename'], index=session['index'], message=message, replace_count=session.get('replace_count', 0))
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)

@@ -36,11 +36,11 @@ def index():
 def upload_file():
     if request.method == 'POST':
         if 'file' not in request.files:
-            flash('No file part')
+            flash('Файл не выбран')
             return redirect(request.url)
         file = request.files['file']
         if file.filename == '':
-            flash('No selected file')
+            flash('Файл не выбран')
             return redirect(request.url)
         if file:
             filename = file.filename
@@ -75,14 +75,14 @@ def edit_file(temp_id):
             content = re.sub(r'<span class="highlight-green">(.*?)</span>', r'\1', content)
             with open(os.path.join(app.config['UPLOAD_FOLDER'], session['filename']), 'w', encoding='utf-8') as file:
                 file.write(content)
-            flash('File saved successfully!')
+            flash('Файл успешно сохранен!')
             return redirect(url_for('edit_file', temp_id=temp_id))
         elif action == 'next_word':
             if session.get('no_more_words', False):
                 session['index'] = 0
                 session['end_index'] = 0
                 session['no_more_words'] = False
-                message = "Starting from the beginning."
+                message = "Начинаем с начала."
             start, end = find_next_word(content, session['end_index'])
             if start == len(content) and end == len(content):
                 message = "Больше сомнительных слов нет. Нажмите ещё раз, чтобы начать поиск сначала."

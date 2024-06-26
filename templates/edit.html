@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать файл</title>
+    <style>
+        .highlight {
+            background-color: yellow;
+        }
+        .highlight-green {
+            background-color: lightgreen;
+        }
+        .highlighted-text {
+            border: 1px solid #ccc;
+            padding: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f9f9f9;
+            height: 200px; /* Высота для отображения только 10 строк */
+            overflow-y: auto; /* Вертикальная прокрутка */
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+    <script>
+        function scrollToHighlighted() {
+            const element = document.querySelector('.highlight');
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        document.addEventListener('DOMContentLoaded', scrollToHighlighted);
+    </script>
+</head>
+<body>
+    <h1>Редактировать файл: {{ filename }}</h1>
+    <p>Заменено слов из dict_true: {{ replace_count }}</p>
+    <form method="post">
+        <div class="highlighted-text">{{ highlighted_content|safe }}</div>
+        <textarea class="hidden" name="content" rows="20" cols="80">{{ content }}</textarea>
+        <br>
+        <button type="submit" name="action" value="next_word">Следующее слово</button>
+        <button type="submit" name="action" value="set_yo">Тут 'Ё'</button>
+        <button type="submit" name="action" value="save">Сохранить</button>
+    </form>
+    <br>
+    <a href="{{ url_for('download_file', filename=filename) }}" class="button">Скачать файл</a>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+          {% for message in messages %}
+            <li>{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+</body>
+</html>
